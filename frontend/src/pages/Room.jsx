@@ -285,16 +285,18 @@ function MeetingRoom({ code, isHost }) {
   }
 
   return (
-    <div className="h-screen bg-canvas flex flex-col font-sans">
+    <div className="h-screen bg-canvas flex flex-col font-sans overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-surface border-b border-surfaceHover">
-        <span className="font-display font-semibold">anymeet</span>
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 bg-surface border-b border-surfaceHover">
+        <span className="font-display font-semibold text-lg sm:text-base">
+          anymeet
+        </span>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {isHost && (
             <>
               <button
                 onClick={handleToggleLock}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm border transition ${
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:text-sm border transition ${
                   locked
                     ? "bg-coral text-white border-coral"
                     : "bg-canvas border-surfaceHover"
@@ -309,7 +311,7 @@ function MeetingRoom({ code, isHost }) {
                   <button
                     onClick={handleToggleRecording}
                     disabled={recordingBusy}
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm border transition disabled:opacity-60 ${
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:text-sm border transition disabled:opacity-60 ${
                       recording
                         ? "bg-red-500 text-white border-red-500"
                         : "bg-canvas border-surfaceHover"
@@ -324,7 +326,7 @@ function MeetingRoom({ code, isHost }) {
 
                   <button
                     onClick={handleEndMeeting}
-                    className="flex items-center gap-1.5 bg-red-500 text-white rounded-full px-3 py-1.5 text-sm hover:bg-red-600 transition"
+                    className="flex items-center gap-1.5 bg-red-500 text-white rounded-full px-3 py-1.5 text-xs sm:text-sm hover:bg-red-600 transition"
                   >
                     <LogOut size={14} />
                     End for all
@@ -335,7 +337,7 @@ function MeetingRoom({ code, isHost }) {
           )}
           <button
             onClick={handleCopyCode}
-            className="flex items-center gap-2 bg-canvas border border-surfaceHover rounded-full px-4 py-1.5 text-sm font-mono hover:bg-surfaceHover transition"
+            className="flex items-center gap-2 bg-canvas border border-surfaceHover rounded-full px-4 py-1.5 text-xs sm:text-sm font-mono hover:bg-surfaceHover transition"
           >
             {copied ? (
               <Check size={14} className="text-mint" />
@@ -348,7 +350,7 @@ function MeetingRoom({ code, isHost }) {
       </div>
 
       {/* Main area: video stage + optional side panels */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative min-h-0">
         <Stage raisedHands={raisedHands} />
         <ReactionsLayer
           open={reactionsOpen}
@@ -396,7 +398,7 @@ function Stage({ raisedHands }) {
 
   return (
     <div
-      className="flex-1 p-4 grid gap-4 overflow-hidden"
+      className="flex-1 min-h-[42vh] md:min-h-0 p-3 sm:p-4 grid gap-3 sm:gap-4 overflow-hidden"
       style={{
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gridTemplateRows: `repeat(${rows}, 1fr)`,
@@ -468,7 +470,7 @@ function ChatPanel({ onClose }) {
   }
 
   return (
-    <div className="w-80 bg-surface border-l border-surfaceHover flex flex-col">
+    <div className="w-full md:w-80 bg-surface border-t md:border-t-0 md:border-l border-surfaceHover flex flex-col max-h-[36vh] md:max-h-none md:h-full min-h-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-surfaceHover">
         <h3 className="font-semibold text-sm">In-call messages</h3>
         <button onClick={onClose} className="text-muted hover:text-ink text-sm">
@@ -476,7 +478,7 @@ function ChatPanel({ onClose }) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
         {chatMessages.length === 0 && (
           <p className="text-muted text-sm text-center mt-6">No messages yet</p>
         )}
@@ -533,7 +535,7 @@ function ParticipantsPanel({ isHost, code, onClose }) {
   }
 
   return (
-    <div className="w-80 bg-surface border-l border-surfaceHover flex flex-col">
+    <div className="w-full md:w-80 bg-surface border-t md:border-t-0 md:border-l border-surfaceHover flex flex-col max-h-[36vh] md:max-h-none md:h-full min-h-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-surfaceHover">
         <h3 className="font-semibold text-sm">
           Participants ({participants.length})
@@ -543,7 +545,7 @@ function ParticipantsPanel({ isHost, code, onClose }) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
         {participants.map((p) => {
           const micTrack = p.getTrackPublication?.(Track.Source.Microphone);
           return (
@@ -630,7 +632,7 @@ function ReactionsLayer({ open, onClose }) {
 
       {/* Popover box - only visible when toggled on, sits right above the control bar */}
       {open && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex gap-1 bg-surface border border-surfaceHover rounded-full px-3 py-2 shadow-lg">
+        <div className="fixed bottom-24 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 flex gap-1 bg-surface border border-surfaceHover rounded-full px-3 py-2 shadow-lg max-w-[calc(100vw-1.5rem)] overflow-x-auto">
           {REACTION_EMOJIS.map((emoji) => (
             <button
               key={emoji}
@@ -666,88 +668,88 @@ function ControlsBar({
   } = useLocalParticipant();
 
   return (
-    <div className="flex items-center justify-center gap-3 py-4 bg-surface border-t border-surfaceHover">
+    <div className="flex flex-wrap items-center justify-center gap-2 px-3 py-3 bg-surface border-t border-surfaceHover">
       <button
         onClick={() =>
           localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)
         }
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           isMicrophoneEnabled ? "bg-canvas text-ink" : "bg-ink text-white"
         }`}
       >
-        {isMicrophoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+        {isMicrophoneEnabled ? <Mic size={17} /> : <MicOff size={17} />}
       </button>
 
       <button
         onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           isCameraEnabled ? "bg-canvas text-ink" : "bg-ink text-white"
         }`}
       >
-        {isCameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
+        {isCameraEnabled ? <Video size={17} /> : <VideoOff size={17} />}
       </button>
 
       <button
         onClick={() =>
           localParticipant.setScreenShareEnabled(!isScreenShareEnabled)
         }
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           isScreenShareEnabled ? "bg-mint text-white" : "bg-canvas text-ink"
         }`}
       >
-        <ScreenShare size={18} />
+        <ScreenShare size={17} />
       </button>
 
       <button
         onClick={onToggleHand}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           isHandRaised ? "bg-coral text-white" : "bg-canvas text-ink"
         }`}
       >
-        <Hand size={18} />
+        <Hand size={17} />
       </button>
 
       <button
         onClick={onToggleCaptions}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           captionsEnabled ? "bg-coral text-white" : "bg-canvas text-ink"
         }`}
       >
-        <Captions size={18} />
+        <Captions size={17} />
       </button>
 
       <button
         onClick={onToggleReactions}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           reactionsOpen ? "bg-coral text-white" : "bg-canvas text-ink"
         }`}
       >
-        <Smile size={18} />
+        <Smile size={17} />
       </button>
 
       <button
         onClick={onToggleParticipants}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           participantsOpen ? "bg-coral text-white" : "bg-canvas text-ink"
         }`}
       >
-        <Users size={18} />
+        <Users size={17} />
       </button>
 
       <button
         onClick={onToggleChat}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition ${
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition ${
           chatOpen ? "bg-coral text-white" : "bg-canvas text-ink"
         }`}
       >
-        <MessageSquare size={18} />
+        <MessageSquare size={17} />
       </button>
 
       <button
         onClick={() => room.disconnect()}
-        className="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition ml-2"
+        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition ml-0 sm:ml-2"
       >
-        <PhoneOff size={18} />
+        <PhoneOff size={17} />
       </button>
     </div>
   );
