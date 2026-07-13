@@ -32,6 +32,9 @@ import {
   Smile,
   Hand,
   Captions,
+  AlertTriangle,
+  FileText,
+  X,
 } from "lucide-react";
 
 function useLiveCaptions(captionsEnabled) {
@@ -152,6 +155,7 @@ export default function Room() {
   const { code } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [dialog, setDialog] = useState(null);
 
   const { livekitToken, livekitUrl, role } = location.state || {};
 
@@ -164,13 +168,19 @@ export default function Room() {
     try {
       const res = await api.get(`/rooms/${code}/recorded`);
       if (res.data.recorded) {
-        const wantsNotes = confirm(
-          "This meeting was recorded. Would you like to view the meeting notes?"
-        );
-        if (wantsNotes) {
-          navigate(`/notes/${code}`);
-          return;
-        }
+        setDialog({
+          kind: "confirm",
+          title: "Meeting recorded",
+          message:
+            "This meeting was recorded. Would you like to view the meeting notes?",
+          confirmLabel: "View notes",
+          cancelLabel: "Return home",
+          icon: FileText,
+          tone: "accent",
+          onConfirm: () => navigate(`/notes/${code}`),
+          onCancel: () => navigate("/"),
+        });
+        return;
       }
     } catch {
       // If the check fails for any reason, just fall through to home.
@@ -179,18 +189,110 @@ export default function Room() {
   }
 
   return (
-    <LiveKitRoom
-      token={livekitToken}
-      serverUrl={livekitUrl}
-      connect={true}
-      video={true}
-      audio={true}
-      style={{ height: "100vh" }}
-      onDisconnected={handleDisconnected}
-    >
-      <RoomAudioRenderer />
-      <MeetingRoom code={code} isHost={role === "host"} />
-    </LiveKitRoom>
+    <>
+      <LiveKitRoom
+        token={livekitToken}
+        serverUrl={livekitUrl}
+        connect={true}
+        video={true}
+        audio={true}
+        style={{ height: "100vh" }}
+        onDisconnected={handleDisconnected}
+      >
+        <RoomAudioRenderer />
+        <MeetingRoom
+          code={code}
+          isHost={role === "host"}
+          setDialog={setDialog}
+        />
+      </LiveKitRoom>
+      {dialog && (
+        <DialogModal
+          dialog={dialog}
+          onClose={() => {
+            const action = dialog.onCancel;
+            setDialog(null);
+            action?.();
+          }}
+          onConfirm={async () => {
+            const action = dialog.onConfirm;
+            setDialog(null);
+            await action?.();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function DialogModal({ dialog, onClose, onConfirm }) {
+  const Icon = dialog.icon || AlertTriangle;
+  const isDanger = dialog.tone === "danger";
+  const confirmLabel = dialog.confirmLabel || "Continue";
+  const cancelLabel = dialog.cancelLabel || "Cancel";
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
+      <div
+        className="absolute inset-0 bg-ink/55 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/60 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
+        <div className="flex items-start justify-between gap-4 border-b border-surfaceHover/70 px-6 py-5">
+          <div className="flex items-start gap-4">
+            <div
+              className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                isDanger
+                  ? "bg-red-500/10 text-red-600"
+                  : "bg-coral/10 text-coral"
+              }`}
+            >
+              <Icon size={22} />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-muted mb-2">
+                {dialog.kind === "confirm" ? "Action required" : "Notice"}
+              </p>
+              <h2 className="font-display text-xl font-semibold text-ink">
+                {dialog.title}
+              </h2>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-muted transition hover:bg-surfaceHover hover:text-ink"
+            aria-label="Close dialog"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          <p className="text-sm leading-relaxed text-muted">{dialog.message}</p>
+        </div>
+
+        <div className="flex flex-col-reverse gap-3 border-t border-surfaceHover/70 px-6 py-5 sm:flex-row sm:justify-end">
+          {dialog.kind === "confirm" ? (
+            <button
+              onClick={onClose}
+              className="rounded-portal border border-surfaceHover bg-white px-5 py-2.5 text-sm font-medium text-ink transition hover:bg-surfaceHover"
+            >
+              {cancelLabel}
+            </button>
+          ) : null}
+          <button
+            onClick={onConfirm}
+            className={`rounded-portal px-5 py-2.5 text-sm font-medium text-white transition ${
+              isDanger
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-coral hover:opacity-90"
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -231,7 +333,7 @@ function useHandRaise() {
   return { raisedHands, isOwnHandRaised, toggleHand };
 }
 
-function MeetingRoom({ code, isHost }) {
+function MeetingRoom({ code, isHost, setDialog }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -243,22 +345,49 @@ function MeetingRoom({ code, isHost }) {
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const captions = useLiveCaptions(captionsEnabled);
 
+  function openErrorDialog(title, message) {
+    setDialog({
+      kind: "alert",
+      title,
+      message,
+      confirmLabel: "Okay",
+      icon: AlertTriangle,
+      tone: "danger",
+    });
+  }
+
   async function handleToggleLock() {
     try {
       const res = await api.post(`/rooms/${code}/lock`);
       setLocked(res.data.locked);
     } catch (err) {
-      alert(err.response?.data?.error || "Could not update lock");
+      openErrorDialog(
+        "Could not update lock",
+        err.response?.data?.error || "Could not update lock"
+      );
     }
   }
 
   async function handleEndMeeting() {
-    if (!confirm("End this meeting for everyone?")) return;
-    try {
-      await api.post(`/rooms/${code}/end`);
-    } catch (err) {
-      alert(err.response?.data?.error || "Could not end meeting");
-    }
+    setDialog({
+      kind: "confirm",
+      title: "End meeting for everyone?",
+      message: "This will disconnect all participants and end the room.",
+      confirmLabel: "End for all",
+      cancelLabel: "Keep meeting open",
+      icon: LogOut,
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api.post(`/rooms/${code}/end`);
+        } catch (err) {
+          openErrorDialog(
+            "Could not end meeting",
+            err.response?.data?.error || "Could not end meeting"
+          );
+        }
+      },
+    });
   }
 
   async function handleToggleRecording() {
@@ -272,7 +401,10 @@ function MeetingRoom({ code, isHost }) {
         setRecording(true);
       }
     } catch (err) {
-      alert(err.response?.data?.error || "Could not update recording");
+      openErrorDialog(
+        "Could not update recording",
+        err.response?.data?.error || "Could not update recording"
+      );
     } finally {
       setRecordingBusy(false);
     }
@@ -363,6 +495,7 @@ function MeetingRoom({ code, isHost }) {
             isHost={isHost}
             code={code}
             onClose={() => setParticipantsOpen(false)}
+            setDialog={setDialog}
           />
         )}
         {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
@@ -514,24 +647,51 @@ function ChatPanel({ onClose }) {
   );
 }
 
-function ParticipantsPanel({ isHost, code, onClose }) {
+function ParticipantsPanel({ isHost, code, onClose, setDialog }) {
   const participants = useParticipants();
+
+  function openErrorDialog(title, message) {
+    setDialog({
+      kind: "alert",
+      title,
+      message,
+      confirmLabel: "Okay",
+      icon: AlertTriangle,
+      tone: "danger",
+    });
+  }
 
   async function handleMute(identity, trackSid) {
     try {
       await api.post(`/rooms/${code}/mute/${identity}/${trackSid}`);
     } catch (err) {
-      alert(err.response?.data?.error || "Could not mute participant");
+      openErrorDialog(
+        "Could not mute participant",
+        err.response?.data?.error || "Could not mute participant"
+      );
     }
   }
 
   async function handleRemove(identity) {
-    if (!confirm("Remove this participant from the meeting?")) return;
-    try {
-      await api.post(`/rooms/${code}/remove/${identity}`);
-    } catch (err) {
-      alert(err.response?.data?.error || "Could not remove participant");
-    }
+    setDialog({
+      kind: "confirm",
+      title: "Remove participant?",
+      message: "This will remove the participant from the meeting.",
+      confirmLabel: "Remove",
+      cancelLabel: "Keep them in",
+      icon: AlertTriangle,
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api.post(`/rooms/${code}/remove/${identity}`);
+        } catch (err) {
+          openErrorDialog(
+            "Could not remove participant",
+            err.response?.data?.error || "Could not remove participant"
+          );
+        }
+      },
+    });
   }
 
   return (
