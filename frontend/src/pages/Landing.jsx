@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../lib/api.js";
-import meetingBoardroom from "../assets/meeting-boardroom.png";
-import dualMonitor from "../assets/dual-monitor.png";
+import meetingBoardroom from "../assets/meeting-boardroom.jpg";
+import dualMonitor from "../assets/dual-monitor.jpg";
 
 const FEATURES = [
   {
